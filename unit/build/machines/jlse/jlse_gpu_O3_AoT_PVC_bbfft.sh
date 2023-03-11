@@ -24,7 +24,6 @@ cmake -DYAKL_ARCH="SYCL" \
       -DYAKL_C_FLAGS="-O3"   \
       -DYAKL_SYCL_USE_BBFFT=1      \
       -DYAKL_SYCL_BBFFT_USE_AOT=1    \
-      -DYAKL_SYCL_BBFFT_AOT_LEGACY_UMD=1 \
       ../../..
 
 

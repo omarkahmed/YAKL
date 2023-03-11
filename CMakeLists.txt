@@ -28,7 +28,6 @@ option(YAKL_MEMORY_DEBUG "Turn on memory allocation debugging (default OFF)." OF
 set(YAKL_SYCL_USE_BBFFT              OFF                  CACHE BOOL    "Use Double-Batched FFT")
 set(YAKL_SYCL_BBFFT_USE_AOT          OFF                  CACHE BOOL    "Use Double-Batched FFT AOT")
 set(YAKL_SYCL_BBFFT_HOME             $ENV{BBFFT_HOME}     CACHE PATH    "Double-Batched FFT Home directory")
-set(YAKL_SYCL_BBFFT_AOT_LEGACY_UMD   OFF                  CACHE BOOL    "Use older PVC user mode driver")
 
 set(YAKL_CXX_SOURCE src/YAKL_fortran_interfaces.cpp)
 set(YAKL_F90_SOURCE src/YAKL_gator_mod.F90)

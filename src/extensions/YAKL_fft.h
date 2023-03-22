@@ -176,7 +176,7 @@ namespace yakl {
 
             CHECK( static_cast<desc_single_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS, batch) );
             CHECK( static_cast<desc_single_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::FWD_DISTANCE,         idist) );
-            CHECK( static_cast<desc_single_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::BWD_DISTANCE,         odist + 2) );
+            CHECK( static_cast<desc_single_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::BWD_DISTANCE,         odist) );
 
             CHECK( static_cast<desc_single_t*>(plan_inverse)->set_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS, batch) );
             CHECK( static_cast<desc_single_t*>(plan_inverse)->set_value(oneapi::mkl::dft::config_param::FWD_DISTANCE,         odist) );
@@ -190,7 +190,7 @@ namespace yakl {
 
             CHECK( static_cast<desc_double_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS, batch) );
             CHECK( static_cast<desc_double_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::FWD_DISTANCE,         idist) );
-            CHECK( static_cast<desc_double_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::BWD_DISTANCE,         odist + 2) );
+            CHECK( static_cast<desc_double_t*>(plan_forward)->set_value(oneapi::mkl::dft::config_param::BWD_DISTANCE,         odist) );
 
             CHECK( static_cast<desc_double_t*>(plan_inverse)->set_value(oneapi::mkl::dft::config_param::NUMBER_OF_TRANSFORMS, batch) );
             CHECK( static_cast<desc_double_t*>(plan_inverse)->set_value(oneapi::mkl::dft::config_param::FWD_DISTANCE,         idist) );

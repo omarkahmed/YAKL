@@ -3,6 +3,7 @@ module purge
 module load intel/oneapi
 module load intel/mpi-utils
 module load intel-comp-rt/ci-neo-master
+module load intel/bbfft
 #module load intel-comp-rt
 module load cmake/3.24.2
 

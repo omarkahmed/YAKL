@@ -87,7 +87,6 @@ cmake -DYAKL_ARCH="${arch}"                                                     
       -DYAKL_F90_FLAGS="-O3"                                                                                                               \
       -DYAKL_SYCL_BBFFT=${bbfft}                                                                                                           \
       -DYAKL_SYCL_BBFFT_AOT=${bbfft_aot}                                                                                                   \
-      -DYAKL_SYCL_BBFFT_HOME="/nfs/site/home/omarahme/git-repos/double-batched-fft-library/install"                                        \
       -DYAKL_SYCL_BBFFT_AOT_LEGACY_UMD=${legacy_umd}                                                                                           \
       -DCMAKE_BUILD_TYPE=${build}                                                                                                          \
       ${SCRIPT_DIR}/../../..

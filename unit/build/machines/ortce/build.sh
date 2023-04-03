@@ -33,7 +33,7 @@ if [[ $1 == '-h' || $1 == '--help' || $1 == '-help' ]]; then
     echo "        build with YAKL profile (default: off)"
     echo
     echo "    -l"
-    echo "        build with legacy UMD (default: off)"
+    echo "        build with legacy UMD, neo version <= 025137 (default: off)"
     echo
     echo "    -d"
     echo "        build with Debug (default: ${build})"
@@ -61,7 +61,6 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 source ${SCRIPT_DIR}/${config}-env.sh
 
-echo "legacy_umd: ${legacy_umd}"
 if [[ ${legacy_umd} = 1 && ${config} =~ "pvc" ]]
 then
   module switch -f intel-comp-rt/ci-neo-master intel-comp-rt

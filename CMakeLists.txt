@@ -30,11 +30,8 @@ option(YAKL_MEMORY_DEBUG "Turn on memory allocation debugging (default OFF)." OF
 set(YAKL_SYCL_BBFFT                  OFF                  CACHE BOOL    "Use Double-Batched FFT")
 set(YAKL_SYCL_BBFFT_AOT              OFF                  CACHE BOOL    "Use Double-Batched FFT AOT")
 set(YAKL_SYCL_BBFFT_HOME             $ENV{BBFFT_HOME}     CACHE PATH    "Double-Batched FFT Home directory")
-set(YAKL_SYCL_BBFFT_AOT_LEGACY_UMD   OFF                  CACHE BOOL    "Use older PVC user mode driver")
+set(YAKL_SYCL_BBFFT_AOT_LEGACY_UMD   OFF                  CACHE BOOL    "Use older PVC user mode driver, ci-neo-master <= 024628")
 
-set(YAKL_CXX_SOURCE src/YAKL_fortran_interfaces.cpp)
-set(YAKL_F90_SOURCE src/YAKL_gator_mod.F90)
-set(YAKL_SOURCE ${YAKL_CXX_SOURCE} ${YAKL_F90_SOURCE})
 
 # Inform the user of the backend being used
 if ("${YAKL_ARCH}" STREQUAL "CUDA")
@@ -122,13 +119,14 @@ endif()
 # Special treatment for SYCL
 if ("${YAKL_ARCH}" STREQUAL "SYCL")
   if (YAKL_SYCL_BBFFT)
+    message("-- Building with BBFFT")
     set(CMAKE_PREFIX_PATH ${YAKL_SYCL_BBFFT_HOME})
     set(BBFFT_AUX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/external/bbfft)
     find_package(bbfft-sycl REQUIRED)
     target_include_directories(${YAKL_TARGET} INTERFACE "${BBFFT_AUX_PATH}")
     target_link_libraries(${YAKL_TARGET} INTERFACE bbfft::bbfft-sycl "${YAKL_COMPILER_FLAGS}")
   else()
-    message("Building with MKL")
+    message("-- Building with MKL")
     if(NOT MKL_ROOT)
       set(MKL_ROOT $ENV{MKLROOT} CACHE PATH "Folder contains MKL")
     endif(NOT MKL_ROOT)

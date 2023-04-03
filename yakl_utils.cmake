@@ -69,7 +69,7 @@ macro(yakl_process_cxx_source_files files)
       if (YAKL_SYCL_BBFFT_AOT)
         set(YAKL_DEFINITIONS "${YAKL_DEFINITIONS} -DYAKL_SYCL_BBFFT_AOT")
         if (YAKL_SYCL_BBFFT_AOT_LEGACY_UMD)
-          # older UMD - agama-ci-devel <= 543
+          # older UMD - ci-neo-master <= 025137
           set(YAKL_DEFINITIONS "${YAKL_DEFINITIONS} -DYAKL_SYCL_BBFFT_AOT_LEGACY_UMD")
         endif()
       endif()

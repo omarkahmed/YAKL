@@ -41,7 +41,7 @@ if (YAKL_SYCL_BBFFT)
       COMMAND ${OCLOC} compile -file ${SRC_FILE} -device pvc -internal_options "-cl-ext=+cl_khr_fp64"
       COMMAND ${CMAKE_LINKER} -r -b binary -o ${OBJ_FILE} ${BIN_FILE}
       DEPENDS yakl-aot-generate
-      COMMENT "-- Ahead-of-time compilation of FFT kernels"
+      COMMENT "Ahead-of-time compilation of FFT kernels"
     )
     add_library(yakl-kernels OBJECT IMPORTED)
     set_property(TARGET yakl-kernels PROPERTY IMPORTED_OBJECTS "${CMAKE_CURRENT_BINARY_DIR}/${OBJ_FILE}")

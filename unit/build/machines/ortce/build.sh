@@ -72,7 +72,7 @@ ${SCRIPT_DIR}/../../cmakeclean.sh
 
 if [[ ${build} = "Debug" ]]
 then
-  opt_flags="-g -O0"
+  opt_flags="-gline-tables-only -O2"
 else
   opt_flags="-O3"
 fi

@@ -1,9 +1,10 @@
 #!/bin/bash
 module purge
 module load intel/oneapi
+module load -f intel-nightly intel/mkl-nda
 module load intel/mpi-utils
-#module load intel-comp-rt/ci-neo-master
 module load intel-comp-rt/ci-neo-master/025611
+#module load intel-comp-rt/ci-neo-master/026093
 module load intel/bbfft
 #module load intel-comp-rt
 module load cmake/3.24.2

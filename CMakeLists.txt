@@ -106,7 +106,7 @@ if ("${YAKL_ARCH}" STREQUAL "CUDA")
   else()
     target_link_libraries(${YAKL_TARGET} INTERFACE cufft)
   endif()
-  
+ 
   if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
     set_property(TARGET ${YAKL_TARGET} PROPERTY CUDA_ARCHITECTURES OFF)
   endif()

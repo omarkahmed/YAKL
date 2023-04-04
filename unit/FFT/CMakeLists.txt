@@ -13,12 +13,14 @@ add_test(NAME FFT_test COMMAND ${REAL_MPI_COMMAND} ./FFT)
 if (YAKL_SYCL_BBFFT)
 
   if (YAKL_SYCL_BBFFT_AOT)
+
     message("-- Building with BBFFT AOT")
     find_package(bbfft-sycl REQUIRED)
     find_program(OCLOC ocloc REQUIRED)
-    add_executable(yakl-aot-generate generate.cpp configurations.cpp)
+    add_executable(yakl-aot-generate bbfft/generate.cpp bbfft/configurations.cpp)
     target_compile_features(yakl-aot-generate PRIVATE cxx_std_17)
     target_link_libraries(yakl-aot-generate PRIVATE bbfft::bbfft-base)
+    target_include_directories(yakl-aot-generate PRIVATE bbfft)
 
     set(SRC_FILE "kernels.cl")
     set(NAMES_FILE "aot_compiled_kernels.cpp")

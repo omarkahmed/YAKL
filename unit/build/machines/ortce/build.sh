@@ -70,8 +70,15 @@ module list
 
 ${SCRIPT_DIR}/../../cmakeclean.sh
 
-if [[ ${fft} = "bbfft" ]]
+if [[ ${build} = "Debug" ]]
 then
+  opt_flags="-g -O0"
+else
+  opt_flags="-O3"
+fi
+
+if [[ ${fft} = "bbfft" ]]
+ then
   bbfft=1
 fi
 if [[ ${aot} = 0 ]]
@@ -80,14 +87,14 @@ then
   aot_flags=""
 fi
 
-cmake -DYAKL_ARCH="${arch}"                                                                                                                \
-      -DYAKL_SYCL_FLAGS="-O3 -fsycl -sycl-std=2020 -fsycl-unnamed-lambda -fsycl-device-code-split=per_kernel ${aot_flags} ${profile_flag}" \
-      -DCMAKE_CXX_FLAGS="-O3"                                                                                                              \
-      -DYAKL_F90_FLAGS="-O3"                                                                                                               \
-      -DYAKL_SYCL_BBFFT=${bbfft}                                                                                                           \
-      -DYAKL_SYCL_BBFFT_AOT=${bbfft_aot}                                                                                                   \
-      -DYAKL_SYCL_BBFFT_AOT_LEGACY_UMD=${legacy_umd}                                                                                           \
-      -DCMAKE_BUILD_TYPE=${build}                                                                                                          \
+cmake -DYAKL_ARCH="${arch}"                                                                                                                         \
+      -DYAKL_SYCL_FLAGS="${opt_flags} -fsycl -sycl-std=2020 -fsycl-unnamed-lambda -fsycl-device-code-split=per_kernel ${aot_flags} ${profile_flag}" \
+      -DCMAKE_CXX_FLAGS="${opt_flags}"                                                                                                              \
+      -DYAKL_F90_FLAGS="${opt_flags}"                                                                                                               \
+      -DYAKL_SYCL_BBFFT=${bbfft}                                                                                                                    \
+      -DYAKL_SYCL_BBFFT_AOT=${bbfft_aot}                                                                                                            \
+      -DYAKL_SYCL_BBFFT_AOT_LEGACY_UMD=${legacy_umd}                                                                                                \
+      -DCMAKE_BUILD_TYPE=${build}                                                                                                                   \
       ${SCRIPT_DIR}/../../..
 
 make clean

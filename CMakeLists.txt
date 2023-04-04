@@ -106,6 +106,7 @@ if ("${YAKL_ARCH}" STREQUAL "CUDA")
   else()
     target_link_libraries(${YAKL_TARGET} INTERFACE cufft)
   endif()
+  
   if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
     set_property(TARGET ${YAKL_TARGET} PROPERTY CUDA_ARCHITECTURES OFF)
   endif()
@@ -194,8 +195,8 @@ configure_package_config_file(${PROJECT_SOURCE_DIR}/src/yakl-variables.cmake.in
                               INSTALL_DESTINATION ${INSTALL_CMAKE_DIR})
 
 # setup the list of targets to install
-
 set(INSTALL_TARGETS ${YAKL_TARGET} ${YAKL_FORTRAN_INTERFACE_TARGET})
+
 # Use a namespace because CMake provides better diagnostics for namespaced imported targets.
 export(TARGETS ${INSTALL_TARGETS} NAMESPACE ${YAKL_TARGET}:: FILE ${PROJECT_BINARY_DIR}/${targets_export_name}.cmake)
 

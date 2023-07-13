@@ -60,6 +60,8 @@ namespace yakl {
         std::string error_message_cannot_grow = error_message_out_of_memory;
         get_yakl_instance().pool.init(alloc,dealloc,zero,initialSize,growSize,blockSize,pool_name,
                                       error_message_out_of_memory,error_message_cannot_grow);
+        if (yakl_mainproc()) std::cout << "Using memory pool. Initial size: " << (float) initialSize/1024./1024./1024.
+                                       << "GB ;  Grow size: " << (float) growSize/1024./1024./1024. << "GB." << std::endl;
       }
 
       set_yakl_allocators_to_default();
@@ -102,7 +104,6 @@ namespace yakl {
         if (yakl_mainproc()) std::cout << "Running on "
                                        << sycl_default_stream().get_device().get_info<sycl::info::device::name>()
                                        << "\n";
-        fence();
       #endif
 
       // Print the device name being run on

@@ -1,5 +1,6 @@
 
 #pragma once
+#include <array>
 
 #include <array>
 #include <iostream>
@@ -55,7 +56,7 @@ namespace array_ir {
     void error_message(char const *message) const {
       std::cerr << "*** ArrayIR class: A FATAL ERROR WAS ENCOUNTERED ***" << std::endl;
       std::cerr << message << std::endl;
-      throw message;
+      throw std::runtime_error(message);
     }
 
     

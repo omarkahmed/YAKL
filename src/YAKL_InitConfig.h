@@ -5,14 +5,16 @@
 
 #pragma once
 
+#include <unistd.h>
+
 __YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
-  
+
   /** @brief An object of this class can optionally be passed to yakl::init() to configure the initialization.
     *        **IMPORTANT**: Creating an InitConfig object pings environment
     *        variables, making it quite expensive to create. Please do not create a lot of these.
     * @details This allows the user to override timer, allocation, and deallocation routines.
-    * 
+    *
     * All `set_` functions return the InitConfig object they were called on. Therefore, the user can code, e.g.,
     * `yakl::init(yakl::InitConfig().set_device_allocator(myalloc).set_device_deallocator(myfree));` */
   class InitConfig {
@@ -20,7 +22,7 @@ namespace yakl {
     /** @private */
     std::function<void *( size_t , char const *)> alloc_device_func;
     /** @private */
-    std::function<void ( void * , char const *)>  free_device_func;  
+    std::function<void ( void * , char const *)>  free_device_func;
     /** @private */
     std::function<void ()>                        timer_init;
     /** @private */
@@ -37,15 +39,39 @@ namespace yakl {
     size_t pool_grow_mb;
     /** @private */
     size_t pool_block_bytes;
-  
+
   public:
     /** @brief Creating an InitConfig() controls the memory pool parameters, timer function overrides, and device
       *        allocation and deallocation overrides. **IMPORTANT**: Creating an InitConfig object pings environment
       *        variables, making it quite expensive to create. Please do not create a lot of these. */
     InitConfig() {
+      size_t mem_total, mem_free;
+      #if   defined(YAKL_ARCH_CUDA)
+        cudaMemGetInfo(&mem_free, &mem_total);
+        mem_free  /= 1024*1024;
+        mem_total /= 1024*1024;
+      #elif defined(YAKL_ARCH_HIP)
+        hipMemGetInfo(&mem_free, &mem_total);
+        mem_free  /= 1024*1024;
+        mem_total /= 1024*1024;
+      #elif defined(YAKL_ARCH_SYCL)
+        setenv("ZES_ENABLE_SYSMAN", "1", 0);
+        mem_total = sycl_default_stream().get_device().get_info<sycl::info::device::global_mem_size>();
+        mem_free  = sycl_default_stream().get_device().get_info<sycl::ext::intel::info::device::free_memory>();
+        mem_free  /= 1024*1024;
+        mem_total /= 1024*1024;
+      #else
+        long pages = sysconf(_SC_PHYS_PAGES);
+        long page_size = sysconf(_SC_PAGE_SIZE);
+        mem_total = (size_t)pages*(size_t)page_size;
+        mem_free  = mem_total;
+        mem_free  /= 1024*1024;
+        mem_total /= 1024*1024;
+      #endif
       pool_enabled     = true;
-      pool_initial_mb  = 1024;
-      pool_grow_mb     = 1024;
+      pool_initial_mb  = mem_total / 8;
+      if (mem_free < pool_initial_mb) pool_initial_mb = 0.5*mem_free;
+      pool_grow_mb     = pool_initial_mb;
       pool_block_bytes = 16*sizeof(size_t);
 
       char * env = std::getenv("GATOR_DISABLE");
@@ -144,5 +170,3 @@ namespace yakl {
 
 }
 __YAKL_NAMESPACE_WRAPPER_END__
-
-

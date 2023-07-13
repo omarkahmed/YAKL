@@ -322,12 +322,11 @@ namespace yakl {
 
       Stream() { }
       Stream(sycl::queue &sycl_queue) { my_stream = std::make_shared<sycl::queue>(sycl_queue); }
-      ~Stream() { }
 
-      Stream(Stream const  &rhs) { my_stream = rhs.my_stream; }
-      Stream(Stream       &&rhs) { my_stream = rhs.my_stream; }
-      Stream & operator=(Stream const  &rhs) { if (this != &rhs) { my_stream = rhs.my_stream; }; return *this; }
-      Stream & operator=(Stream       &&rhs) { if (this != &rhs) { my_stream = rhs.my_stream; }; return *this; }
+      Stream( const Stream& )     = default;
+      Stream( Stream&& ) noexcept = default;
+      Stream& operator=( const Stream& ) = default;
+      Stream& operator=( Stream&& ) noexcept = default;
 
       void create() {
         // Ensure these multi-streams use the same device & context as default-stream
@@ -339,13 +338,19 @@ namespace yakl {
         }
       }
 
-      void destroy() { my_stream.reset(); }
       sycl::queue & get_real_stream() const { return (my_stream != nullptr) ? *my_stream : sycl_default_stream(); }
       bool operator==(Stream stream) const { return get_real_stream() == stream.get_real_stream(); }
       inline void wait_on_event(Event event);
       bool is_default_stream() const { return get_real_stream() == sycl_default_stream(); }
-      bool completed() { return false; /* return my_stream->ext_oneapi_empty(); */ }
-      void fence() { if(!completed()) my_stream->wait(); }
+      bool completed() {
+        /* macro SYCL_EXT_ONEAPI_QUEUE_EMPTY is defined by the supported compilers */
+        #if defined(SYCL_EXT_ONEAPI_QUEUE_EMPTY)
+          return get_real_stream().ext_oneapi_empty();
+        #else
+          return false;
+        #endif
+      }
+      void fence() { if(!completed()) get_real_stream().wait(); }
     };
 
 
@@ -376,7 +381,7 @@ namespace yakl {
 
     inline void Event::record(Stream stream) { my_event = stream.get_real_stream().ext_oneapi_submit_barrier(); }
 
-    inline void Stream::wait_on_event(Event event) { my_stream->ext_oneapi_submit_barrier({event.get_real_event()}); }
+    inline void Stream::wait_on_event(Event event) { this->get_real_stream().ext_oneapi_submit_barrier({event.get_real_event()}); }
 
 
   #else
@@ -424,7 +429,7 @@ namespace yakl {
     inline void Stream::wait_on_event(Event event) {  }
 
   #endif
-    
+
 
   /** @brief Create and return a Stream object. It is guaranteed to not be the default stream */
   inline Stream create_stream() { Stream stream; stream.create(); return stream; }
@@ -433,10 +438,10 @@ namespace yakl {
   inline Event record_event(Stream stream = Stream()) { Event event; event.create(); event.record(stream); return event; }
 
 
-  /** @brief Implements a list of Stream objects. 
+  /** @brief Implements a list of Stream objects.
     *        Needs to store a pointer to avoid construction on the device since Array objects need to store a
     *        list of streams on which they depend.
-    * 
+    *
     * This purposely mimics a std::vector class's methods */
   struct StreamList {
     /** @private */
@@ -444,14 +449,10 @@ namespace yakl {
     std::mutex mtx_loc;
     /** @brief Create an empty stream list */
     YAKL_INLINE StreamList() {
-      #if YAKL_CURRENTLY_ON_HOST()
-        list = new std::vector<Stream>;
-      #endif
+      YAKL_EXECUTE_ON_HOST_ONLY( list = new std::vector<Stream>; )
     }
     YAKL_INLINE ~StreamList() {
-      #if YAKL_CURRENTLY_ON_HOST()
-        delete list;
-      #endif
+      YAKL_EXECUTE_ON_HOST_ONLY( delete list; )
     }
     /** @brief Add a stream to the end of the list */
     void push_back(Stream stream) {
@@ -471,5 +472,3 @@ namespace yakl {
 
 }
 __YAKL_NAMESPACE_WRAPPER_END__
-
-

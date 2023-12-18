@@ -2,7 +2,6 @@
 #pragma once
 // Included by YAKL_intrinsics.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
   namespace intrinsics {
 
@@ -17,7 +16,8 @@ namespace yakl {
       } else {
         for (int i=lbound(arr,1); i <= ubound(arr,1); i++) { if (arr(i) == mv) return i; }
       }
-      return -1;
+      // Never reaches here, but nvcc isn't smart enough to figure it out.
+      return 0;
     }
 
     template <class T>
@@ -28,13 +28,14 @@ namespace yakl {
       T mv = maxval(arr,stream);
       #ifdef YAKL_B4B
         for (int i=0; i < arr.totElems(); i++) { if (arr(i) == mv) return i; }
-        return -1;
       #else
         ScalarLiveOut<int> ind(0,stream);
         c::parallel_for( "YAKL_internal_maxloc" , arr.totElems() , YAKL_LAMBDA (int i) { if (arr(i) == mv) ind = i; }, 
                          DefaultLaunchConfig().set_stream(stream) );
         return ind.hostRead(stream);
       #endif
+      // Never reaches here, but nvcc isn't smart enough to figure it out.
+      return 0;
     }
 
     template <class T>
@@ -45,13 +46,14 @@ namespace yakl {
       T mv = maxval(arr,stream);
       #ifdef YAKL_B4B
         for (int i=lbound(arr,1); i <= ubound(arr,1); i++) { if (arr(i) == mv) return i; }
-        return -1;
       #else
         ScalarLiveOut<int> ind(lbound(arr,1),stream);
         fortran::parallel_for( "YAKL_internal_maxloc" , {lbound(arr,1),ubound(arr,1)} , YAKL_LAMBDA (int i) { if (arr(i) == mv) ind = i; }, 
                                DefaultLaunchConfig().set_stream(stream) );
         return ind.hostRead(stream);
       #endif
+      // Never reaches here, but nvcc isn't smart enough to figure it out.
+      return 0;
     }
 
     template <class T, class D0>
@@ -82,5 +84,4 @@ namespace yakl {
 
   }
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 

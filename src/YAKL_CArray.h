@@ -2,7 +2,6 @@
 #pragma once
 // Included by YAKL_Array.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   /** @brief This implements the yakl:Array class with yakl::styleC behavior
@@ -190,12 +189,16 @@ namespace yakl {
       #ifdef YAKL_DEBUG
         if (dims.size() != rank) yakl_throw("ERROR: Number of constructor dimensions does not match the Array rank");
       #endif
-      YAKL_EXECUTE_ON_HOST_ONLY( this->deallocate(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        this->deallocate();
+      #endif
       #ifdef YAKL_DEBUG
         this->myname = label;
       #endif
       for (int i=0; i < rank; i++) { this->dimension[i] = dims[i]; }
-      YAKL_EXECUTE_ON_HOST_ONLY( this->allocate(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        this->allocate();
+      #endif
     }
     
 
@@ -335,7 +338,9 @@ namespace yakl {
       if constexpr (! std::is_const<T>::value) {
         if (this == &rhs) { return *this; }
       }
-      YAKL_EXECUTE_ON_HOST_ONLY( this->deallocate(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        this->deallocate();
+      #endif
       copy_constructor_common(rhs);
       return *this;
     }
@@ -346,7 +351,9 @@ namespace yakl {
       if constexpr (std::is_const<T>::value) {
         if (this == &rhs) { return *this; }
       }
-      YAKL_EXECUTE_ON_HOST_ONLY( this->deallocate(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        this->deallocate();
+      #endif
       copy_constructor_common(rhs);
       return *this;
     }
@@ -361,13 +368,18 @@ namespace yakl {
         this->myname = rhs.myname;
       #endif
       this->myData   = rhs.myData;
-      YAKL_EXECUTE_ON_HOST_ONLY( yakl_mtx_lock(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        yakl_mtx_lock();
+      #endif
       this->refCount = rhs.refCount;
       if (this->refCount != nullptr) {
-        // YAKL_EXECUTE_ON_HOST_ONLY( (*(this->refCount))++; )  // This gives an nvc++ error
-        YAKL_EXECUTE_ON_HOST_ONLY( { (*(this->refCount))++; } )  // This works around the nvc++ error
+        #if YAKL_CURRENTLY_ON_HOST()
+          (*(this->refCount))++;
+        #endif
       }
-      YAKL_EXECUTE_ON_HOST_ONLY( yakl_mtx_unlock(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        yakl_mtx_unlock();
+      #endif
     }
 
 
@@ -397,7 +409,9 @@ namespace yakl {
     /** @brief Move metadata and data pointer. No deep copy. */
     YAKL_INLINE Array& operator=(Array &&rhs) {
       if (this == &rhs) { return *this; }
-      YAKL_EXECUTE_ON_HOST_ONLY( this->deallocate(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        this->deallocate();
+      #endif
       for (int i=0; i<rank; i++) {
         this->dimension[i] = rhs.dimension[i];
       }
@@ -420,7 +434,9 @@ namespace yakl {
     */
     /** @brief If owned, decrement reference counter, and deallocate data when it reaches zero. If non-owned, does nothing */
     YAKL_INLINE ~Array() {
-      YAKL_EXECUTE_ON_HOST_ONLY( this->deallocate(); )
+      #if YAKL_CURRENTLY_ON_HOST()
+        this->deallocate();
+      #endif
     }
 
 
@@ -583,16 +599,15 @@ namespace yakl {
         if constexpr (rank >= 6) { if (i5 >= this->dimension[5]) ind_out_bounds<5>(i5); }
         if constexpr (rank >= 7) { if (i6 >= this->dimension[6]) ind_out_bounds<6>(i6); }
         if constexpr (rank >= 8) { if (i7 >= this->dimension[7]) ind_out_bounds<7>(i7); }
-        #if defined(YAKL_SEPARATE_MEMORY_SPACE)
-          YAKL_EXECUTE_ON_DEVICE_ONLY( if constexpr (myMem == memHost) yakl_throw("ERROR: host array being accessed in a device kernel"); )
-          #if !defined(YAKL_MANAGED_MEMORY)
-            YAKL_EXECUTE_ON_HOST_ONLY(
-              if constexpr (myMem == memDevice) {
-                std::cerr << "ERROR: For Array labeled: " << this->myname << ":" << std::endl;
-                yakl_throw("Device array being accessed on the host without managed memory turned on");
-              }
-            )
-          #endif
+        #if defined(YAKL_SEPARATE_MEMORY_SPACE) && YAKL_CURRENTLY_ON_DEVICE()
+          if constexpr (myMem == memHost) yakl_throw("ERROR: host array being accessed in a device kernel");
+        #endif
+        #if defined(YAKL_SEPARATE_MEMORY_SPACE) && YAKL_CURRENTLY_ON_HOST() && !defined(YAKL_MANAGED_MEMORY)
+          if constexpr (myMem == memDevice) {
+            std::cerr << "ERROR: For Array labeled: " << this->myname << ":" << std::endl;
+            std::cerr << "Device array being accessed on the host without managed memory turned on";
+            yakl_throw("");
+          }
         #endif
       #endif
     }
@@ -603,12 +618,14 @@ namespace yakl {
     template <int I>
     YAKL_INLINE void ind_out_bounds(index_t ind) const {
       #ifdef YAKL_DEBUG
-        YAKL_EXECUTE_ON_HOST_ONLY(
+        #if YAKL_CURRENTLY_ON_HOST()
           std::cerr << "ERROR: For Array labeled: " << this->myname << ":" << std::endl;
           std::cerr << "Index " << I+1 << " of " << rank << " is out of bounds.  Provided index: " << ind
                     << ".  Upper Bound: " << this->dimension[I]-1 << std::endl;
-        )
-        yakl_throw("ERROR: Index out of bounds.");
+          yakl_throw("");
+        #else
+          yakl_throw("ERROR: Index out of bounds.");
+        #endif
       #endif
     }
 
@@ -625,45 +642,17 @@ namespace yakl {
     template <class TLOC>
     void memset_loc(TLOC rhs) const {
       if (myMem == memDevice) {
+        YAKL_SCOPE( arr , *this );
         #ifdef YAKL_ENABLE_STREAMS
           fence();
         #endif
-        memset(*this, rhs);
+        c::parallel_for( "YAKL_internal_Array=scalar" , this->totElems() , YAKL_LAMBDA (int i) { arr.myData[i] = rhs; });
         #ifdef YAKL_ENABLE_STREAMS
           fence();
         #endif
       } else {
         for (int i=0; i < this->totElems(); i++) { this->myData[i] = rhs; }
       }
-    }
-
-
-    /** @brief Return an array aliasing a contiguous subset of the slowest dimension. Retuns the same array with the slowest dimension truncated
-               to [0,u-1]. */
-    YAKL_INLINE Array<T,rank,myMem,styleC> subset_slowest_dimension(int u) const { return subset_slowest_dimension(0,u-1); }
-
-
-    /** @brief Return an array aliasing a contiguous subset of the slowest dimension */
-    YAKL_INLINE Array<T,rank,myMem,styleC> subset_slowest_dimension(int l, int u) const {
-      #ifdef YAKL_DEBUG
-        if (! this->initialized()) { yakl_throw("ERROR: Trying to subset_slowest_dimension an Array that hasn't been initialized"); }
-        if (l < 0) { yakl_throw("ERROR: subset_slowest_dimension lower bound < 0"); }
-        if (u < 0) { yakl_throw("ERROR: subset_slowest_dimension upper bound < 0"); }
-        if (l > u) { yakl_throw("ERROR: subset_slowest_dimension lower bound > upper bounds"); }
-        if (u > this->dimension[0]-1) { yakl_throw("ERROR: subset_slowest_dimension upper bound out of bounds"); }
-      #endif
-      auto ret = *this;
-      auto &d = this->dimension;
-      if constexpr (rank == 1) ret.myData += l;
-      if constexpr (rank == 2) ret.myData += l*d[1];
-      if constexpr (rank == 3) ret.myData += l*d[1]*d[2];
-      if constexpr (rank == 4) ret.myData += l*d[1]*d[2]*d[3];
-      if constexpr (rank == 5) ret.myData += l*d[1]*d[2]*d[3]*d[4];
-      if constexpr (rank == 6) ret.myData += l*d[1]*d[2]*d[3]*d[4]*d[5];
-      if constexpr (rank == 7) ret.myData += l*d[1]*d[2]*d[3]*d[4]*d[5]*d[6];
-      if constexpr (rank == 8) ret.myData += l*d[1]*d[2]*d[3]*d[4]*d[5]*d[6]*d[7];
-      ret.dimension[0] = u-l+1;
-      return ret;
     }
 
 
@@ -695,17 +684,23 @@ namespace yakl {
     template <int N> YAKL_INLINE Array<T,N,myMem,styleC> slice( Dims const &dims ) const {
       #ifdef YAKL_DEBUG
         if (rank != dims.size()) {
-          YAKL_EXECUTE_ON_HOST_ONLY( std::cerr << "For Array named " << this->myname << ":  "; )
+          #if YAKL_CURRENTLY_ON_HOST()
+            std::cerr << "For Array named " << this->myname << ":  ";
+          #endif
           yakl_throw("ERROR: slice rank must be equal to dims.size()");
         }
         for (int i = rank-1-N; i >= 0; i--) {
           if (dims.data[i] >= this->dimension[i]) {
-            YAKL_EXECUTE_ON_HOST_ONLY( std::cerr << "For Array named " << this->myname << ":  "; )
+            #if YAKL_CURRENTLY_ON_HOST()
+              std::cerr << "For Array named " << this->myname << ":  ";
+            #endif
             yakl_throw("ERROR: One of the slicing dimension dimensions is out of bounds");
           }
         }
         if (! this->initialized()) {
-          YAKL_EXECUTE_ON_HOST_ONLY( std::cerr << "For Array named " << this->myname << ":  "; )
+          #if YAKL_CURRENTLY_ON_HOST()
+            std::cerr << "For Array named " << this->myname << ":  ";
+          #endif
           yakl_throw("ERROR: calling slice() on an Array that hasn't been allocated");
         }
       #endif
@@ -721,14 +716,14 @@ namespace yakl {
         offset *= this->dimension[i];
       }
       ret.myData = &(this->myData[retOff]);
-      YAKL_EXECUTE_ON_HOST_ONLY(
+      #if YAKL_CURRENTLY_ON_HOST()
         yakl_mtx_lock();
         ret.refCount = this->refCount;
         if (this->refCount != nullptr) {
           (*(this->refCount))++;
         }
         yakl_mtx_unlock();
-      )
+      #endif
       return ret;
     }
     /** @brief Array slice of 1-D array 
@@ -833,14 +828,14 @@ namespace yakl {
         ret.myname = this->myname;
       #endif
       ret.myData = this->myData;
-      YAKL_EXECUTE_ON_HOST_ONLY(
+      #if YAKL_CURRENTLY_ON_HOST()
         yakl_mtx_lock();
         ret.refCount = this->refCount;
         if (this->refCount != nullptr) {
           (*(this->refCount))++;
         }
         yakl_mtx_unlock();
-      )
+      #endif
       return ret;
     }
     /** @brief Reshape array into a 1-D array
@@ -891,14 +886,14 @@ namespace yakl {
         ret.myname = this->myname;
       #endif
       ret.myData = this->myData;
-      YAKL_EXECUTE_ON_HOST_ONLY(
+      #if YAKL_CURRENTLY_ON_HOST()
         yakl_mtx_lock();
         ret.refCount = this->refCount;
         if (this->refCount != nullptr) {
           (*(this->refCount))++;
         }
         yakl_mtx_unlock();
-      )
+      #endif
       return ret;
     }
 
@@ -939,7 +934,9 @@ namespace yakl {
     inline Array<typename std::remove_cv<TLOC>::type,rank,memHost,styleC> createHostObject() const {
       #ifdef YAKL_DEBUG
         if (! this->initialized()) {
-          YAKL_EXECUTE_ON_HOST_ONLY( std::cerr << "For Array named " << this->myname << ":  "; )
+          #if YAKL_CURRENTLY_ON_HOST()
+            std::cerr << "For Array named " << this->myname << ":  ";
+          #endif
           yakl_throw("Error: createHostObject() called on an Array that hasn't been allocated");
         }
       #endif
@@ -990,7 +987,9 @@ namespace yakl {
     inline Array<typename std::remove_cv<TLOC>::type,rank,memDevice,styleC> createDeviceObject() const {
       #ifdef YAKL_DEBUG
         if (! this->initialized()) {
-          YAKL_EXECUTE_ON_HOST_ONLY( std::cerr << "For Array named " << this->myname << ":  "; )
+          #if YAKL_CURRENTLY_ON_HOST()
+            std::cerr << "For Array named " << this->myname << ":  ";
+          #endif
           yakl_throw("Error: createDeviceObject() called on an Array that hasn't been allocated.");
         }
       #endif
@@ -1043,6 +1042,5 @@ namespace yakl {
   };
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

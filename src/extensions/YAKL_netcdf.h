@@ -7,7 +7,6 @@
 
 
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
   //Error reporting routine for the PNetCDF I/O
   /** @private */
@@ -15,7 +14,7 @@ namespace yakl {
     if (ierr != NC_NOERR) {
       printf("NetCDF Error at line: %d\n", line);
       printf("%s\n",nc_strerror(ierr));
-      yakl_throw(nc_strerror(ierr));
+      yakl_throw("");
     }
   }
 
@@ -611,6 +610,5 @@ namespace yakl {
 
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

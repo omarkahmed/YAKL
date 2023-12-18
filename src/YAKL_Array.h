@@ -11,7 +11,6 @@
 #include "YAKL_CSArray.h"
 #include "YAKL_FSArray.h"
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   // Labels for Array styles. C has zero-based indexing with the last index varying the fastest.
@@ -341,7 +340,6 @@ namespace yakl {
   };
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 #include "YAKL_ArrayBase.h"
 #include "YAKL_CArray.h"

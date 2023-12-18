@@ -18,18 +18,17 @@
 #include <memory>
 #include <cstring>
 #include <vector>
-#include <array>
 #include <mutex>
 #include "stdlib.h"
 #include <list>
 #include <functional>
-#include <stdexcept>
 
 #ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 
 #ifdef YAKL_DEBUG
+#include <stdexcept>
 #include <sstream>
 #include <string>
 #endif
@@ -52,8 +51,7 @@
   #include "rocfft.h"
 #elif defined(YAKL_ARCH_SYCL)
   #include <sycl/sycl.hpp>
-  #include <oneapi/mkl/exceptions.hpp>
-  #include <oneapi/mkl/dfti.hpp>
+  #include <oneapi/mkl.hpp>
 #elif defined(YAKL_ARCH_OPENMP)
   #include <omp.h>
 #endif

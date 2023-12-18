@@ -2,14 +2,16 @@
 #pragma once
 
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
+  // For thread safety in YAKL Array reference counters
+  /** @private */
+  extern std::mutex yakl_mtx;
+
   // YAKL's default allocation, free, mutex lock, and mutex unlock routines.
   /** @private */
-  inline void yakl_mtx_lock  () { get_yakl_instance().yakl_mtx.lock  (); }
+  inline void yakl_mtx_lock  () { yakl_mtx.lock  (); }
   /** @private */
-  inline void yakl_mtx_unlock() { get_yakl_instance().yakl_mtx.unlock(); }
+  inline void yakl_mtx_unlock() { yakl_mtx.unlock(); }
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

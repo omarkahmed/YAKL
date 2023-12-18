@@ -2,7 +2,6 @@
 #pragma once
 // Included by YAKL.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   template <class T, int memSpace, int RED> class ParallelReduction;
@@ -382,6 +381,5 @@ namespace yakl {
   template <class T, int memSpace> using ParallelProd = ParallelReduction<T,memSpace,YAKL_REDUCTION_PROD>;
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

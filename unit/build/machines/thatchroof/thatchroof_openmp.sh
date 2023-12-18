@@ -8,9 +8,9 @@ module purge
 unset GATOR_DISABLE
 export OMP_NUM_THREADS=24
 
-export CC=gcc-8
-export CXX=g++-8
-export FC=gfortran-8
+export CC=gcc
+export CXX=g++
+export FC=gfortran
 unset CXXFLAGS
 unset FFLAGS
 

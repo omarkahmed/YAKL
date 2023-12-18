@@ -2,7 +2,6 @@
 #pragma once
 // Included by YAKL.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
   // This exists to create a queue for SYCL kernels and data transfers
   #ifdef YAKL_ARCH_SYCL
@@ -39,11 +38,13 @@ namespace yakl {
 
     private:
       dev_mgr() {
-        sycl::device dev(sycl::gpu_selector_v);
+        sycl::device dev(sycl::gpu_selector{});
+        _devs = std::make_shared<sycl::device>(dev);
         _queues = std::make_shared<sycl::queue>(dev,
                                                 asyncHandler,
                                                 sycl::property_list{sycl::property::queue::in_order{}});
       }
+      std::shared_ptr<sycl::device> _devs;
       std::shared_ptr<sycl::queue> _queues;
     };
 
@@ -77,7 +78,6 @@ namespace yakl {
 
   #endif // YAKL_ARCH_SYCL
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 
 #if defined(YAKL_ARCH_SYCL) && defined(SYCL_DEVICE_COPYABLE)

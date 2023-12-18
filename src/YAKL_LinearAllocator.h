@@ -2,7 +2,6 @@
 #pragma once
 // Included by YAKL_Gator.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
 
@@ -285,13 +284,12 @@ namespace yakl {
 
     void die(std::string str="") {
       std::cerr << str << std::endl;
-      throw std::runtime_error(str);
+      throw str;
     }
 
 
   };
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

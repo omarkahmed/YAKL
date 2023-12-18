@@ -1,10 +1,6 @@
 
 #pragma once
 
-#include <array>
-#include <iostream>
-#include <type_traits>
-
 /** @brief The ArrayIR namespace holds the ArrayIR class and memory type constants associated with ArrayIR.
            This class holds library-agnostic Array metadata to make it easy to transfer array objects between
            different C++ libraries. */
@@ -55,7 +51,7 @@ namespace array_ir {
     void error_message(char const *message) const {
       std::cerr << "*** ArrayIR class: A FATAL ERROR WAS ENCOUNTERED ***" << std::endl;
       std::cerr << message << std::endl;
-      throw std::runtime_error(message);
+      throw message;
     }
 
     

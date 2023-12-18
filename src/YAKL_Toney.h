@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <vector>
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   // Yes, this is Toney the Timer
@@ -185,9 +184,8 @@ namespace yakl {
     }
 
 
-    void die(std::string msg) { std::cerr << msg << std::endl; throw std::runtime_error(msg); }
+    void die(std::string msg) { std::cerr << msg << std::endl; throw ""; }
   };
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 

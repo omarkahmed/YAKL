@@ -7,12 +7,11 @@
 #pragma once
 // Included by YAKL.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   /** @private */
   template <class T, int rank, int myMem, int myStyle, class I>
-  void memset( Array<T,rank,myMem,myStyle> const &arr , I val , Stream stream = Stream() ) {
+  void memset( Array<T,rank,myMem,myStyle> &arr , I val , Stream stream = Stream() ) {
     #ifdef YAKL_DEBUG
       if (! arr.initialized()) {
         yakl_throw("ERROR: calling memset on an array that is not allocated");
@@ -70,6 +69,5 @@ namespace yakl {
   }
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

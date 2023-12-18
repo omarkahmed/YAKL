@@ -6,7 +6,6 @@
 #pragma once
 
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
   // Set default vector lengths. On GPU devices, this is the block size
   #ifndef YAKL_DEFAULT_VECTOR_LEN
@@ -111,6 +110,5 @@ namespace yakl {
     typedef struct InnerHandlerEmpty {} InnerHandler;
   #endif
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

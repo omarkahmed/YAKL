@@ -7,7 +7,6 @@
 #pragma once
 // Included by YAKL_Array.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   // This implements all functionality used by all dynamically allocated arrays
@@ -205,10 +204,6 @@ namespace yakl {
     YAKL_INLINE T *data() const { return this->myData; }
     /** @brief Returns the raw data pointer of this array object. */
     YAKL_INLINE T *get_data() const { return this->myData; }
-    /** @brief Returns pointer to beginning of the data */
-    YAKL_INLINE T *begin() const { return this->myData; }
-    /** @brief Returns pointer to end of the data */
-    YAKL_INLINE T *end() const { return begin() + size(); }
     /** @brief Always true. yakl::Array objects are always contiguous in memory with no padding. */
     YAKL_INLINE bool span_is_contiguous() const { return true; }
     /** @brief Returns whether this array object has is in an initialized / allocated state. */
@@ -280,12 +275,12 @@ namespace yakl {
           this->refCount = nullptr;
           if (this->totElems() > 0) {
             if (myMem == memDevice) {
-              if (streams_enabled && use_pool() && get_yakl_instance().device_allocators_are_default && (! stream_dependencies.empty()) ) {
+              if (streams_enabled && use_pool() && device_allocators_are_default && (! stream_dependencies.empty()) ) {
                 std::vector<Event> event_dependencies;
                 for (int i=0; i < stream_dependencies.size(); i++) {
                   event_dependencies.push_back( record_event(stream_dependencies[i]) );
                 }
-                get_yakl_instance().pool.free_with_event_dependencies( data , event_dependencies , this->label() );
+                pool.free_with_event_dependencies( data , event_dependencies , this->label() );
               } else {
                 free_device(data,this->label());
               }
@@ -317,12 +312,12 @@ namespace yakl {
           this->refCount = nullptr;
           if (this->totElems() > 0) {
             if (myMem == memDevice) {
-              if (streams_enabled && use_pool() && get_yakl_instance().device_allocators_are_default && (! stream_dependencies.empty()) ) {
+              if (streams_enabled && use_pool() && device_allocators_are_default && (! stream_dependencies.empty()) ) {
                 std::vector<Event> event_dependencies;
                 for (int i=0; i < stream_dependencies.size(); i++) {
                   event_dependencies.push_back( record_event(stream_dependencies[i]) );
                 }
-                get_yakl_instance().pool.free_with_event_dependencies( this->myData , event_dependencies , this->label() );
+                pool.free_with_event_dependencies( this->myData , event_dependencies , this->label() );
               } else {
                 free_device(this->myData,this->label());
               }
@@ -374,6 +369,5 @@ namespace yakl {
   };
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

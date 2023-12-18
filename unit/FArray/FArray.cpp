@@ -1,8 +1,6 @@
 
 #include <iostream>
 #include "YAKL.h"
-#include <random>
-#include <algorithm>
 
 using yakl::Array;
 using yakl::styleFortran;
@@ -72,8 +70,6 @@ int main() {
     real6d test6d("test6d",d1,d2,d3,d4,d5,d6);
     real7d test7d("test7d",d1,d2,d3,d4,d5,d6,d7);
     real8d test8d("test8d",d1,d2,d3,d4,d5,d6,d7,d8);
-
-    std::cout << "Is FSArray trivially copyable? " << std::is_trivially_copyable<yakl::FSArray<real,1,yakl::SB<1>>>::value << std::endl;
 
     yakl::memset(test1d,0.f);
     yakl::memset(test2d,0.f);
@@ -386,31 +382,6 @@ int main() {
     auto constDevArr = construct_const_array_device();
     constDevArr.deallocate();
     if (constDevArr.initialized()) die("constDevArr: array didn't deallocate properly");
-
-    ///////////////////////////////////////////////////////////
-    // Test subset_slowest_dimension
-    ///////////////////////////////////////////////////////////
-    test7d = 1;
-    test7d.subset_slowest_dimension(2) = 2;
-    if (yakl::intrinsics::sum(test7d) != d1*d2*d3*d4*d5*d6*5) { die("SimpleBounds: wrong sum for reshaped subset"); }
-
-    {
-      yakl::Array<int,1,memHost,styleFortran> indices("indices",100);
-      for (int i=1; i <= 100; i++) { indices(i) = i; }
-      std::shuffle( indices.begin() , indices.end() , std::default_random_engine(13) );
-      int tot = 0;
-      for (int i=1; i <= 99; i++) { tot += std::abs( indices(i+1) - indices(i) ); }
-      if (tot == 99) die("ERROR: Shuffle did not work for FArray");
-    }
-
-    {
-      yakl::FSArray<int,1,yakl::SB<100>> indices;
-      for (int i=1; i <= 100; i++) { indices(i) = i; }
-      std::shuffle( indices.begin() , indices.end() , std::default_random_engine(13) );
-      int tot = 0;
-      for (int i=1; i <= 99; i++) { tot += std::abs( indices(i+1) - indices(i) ); }
-      if (tot == 99) die("ERROR: Shuffle did not work for FArray");
-    }
 
   }
   yakl::finalize();

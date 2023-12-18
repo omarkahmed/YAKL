@@ -8,7 +8,6 @@
   #include "pocketfft_hdronly.h"
 #endif
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 
   /** @brief Compute batched real-to-complex forward and inverse FFTs on yakl::Array objects using vendor libraries.
@@ -371,5 +370,4 @@ namespace yakl {
   };
 
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 

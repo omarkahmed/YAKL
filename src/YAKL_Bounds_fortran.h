@@ -7,7 +7,6 @@
 #pragma once
 // Included by YAKL_parallel_for_fortran.h
 
-__YAKL_NAMESPACE_WRAPPER_BEGIN__
 namespace yakl {
 namespace fortran {
 
@@ -374,6 +373,5 @@ namespace fortran {
 
 }
 }
-__YAKL_NAMESPACE_WRAPPER_END__
 
 

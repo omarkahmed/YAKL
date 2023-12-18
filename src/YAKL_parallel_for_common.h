@@ -81,8 +81,8 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
       cudaKernelRef <<< (unsigned int) (bounds.nIter-1)/VecLen+1 , VecLen , 0 , stream.get_real_stream() >>> ( bounds , *fp , config );
       check_last_error();
       #ifdef YAKL_ENABLE_STREAMS
-        if (use_pool() && get_yakl_instance().device_allocators_are_default) {
-          get_yakl_instance().pool.free_with_event_dependencies( fp , {record_event(stream)} , "functor_buffer" );
+        if (use_pool() && device_allocators_are_default) {
+          pool.free_with_event_dependencies( fp , {record_event(stream)} , "functor_buffer" );
         } else          {
           free_device( fp , "functor_buffer" );
         }
@@ -120,8 +120,8 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
       cudaKernelOuterRef <<< (unsigned int) bounds.nIter , config.inner_size , 0 , stream.get_real_stream() >>> ( bounds , *fp , config , InnerHandler() );
       check_last_error();
       #ifdef YAKL_ENABLE_STREAMS
-        if (use_pool() && get_yakl_instance().device_allocators_are_default) {
-          get_yakl_instance().pool.free_with_event_dependencies( fp , {record_event(stream)} , "functor_buffer" );
+        if (use_pool() && device_allocators_are_default) {
+          pool.free_with_event_dependencies( fp , {record_event(stream)} , "functor_buffer" );
         } else {
           free_device( fp , "functor_buffer" );
         }
@@ -136,14 +136,24 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
 
   template <class F, int N, bool simple>
   YAKL_INLINE void parallel_inner_cuda( Bounds<N,simple> bounds , F const &f ) {
-    YAKL_EXECUTE_ON_DEVICE_ONLY( if (threadIdx.x < bounds.nIter) callFunctor( f , bounds , threadIdx.x ); )
+    #if YAKL_CURRENTLY_ON_DEVICE()
+      if (threadIdx.x < bounds.nIter) callFunctor( f , bounds , threadIdx.x );
+    #else
+      // Avoid not used warning
+      (void) f;
+    #endif
   }
 
 
 
   template <class F>
   YAKL_INLINE void single_inner_cuda( F const &f ) {
-    YAKL_EXECUTE_ON_DEVICE_ONLY( if (threadIdx.x == 0) f(); )
+    #if YAKL_CURRENTLY_ON_DEVICE()
+      if (threadIdx.x == 0) f();
+    #else
+      // Avoid not used warning
+      (void) f;
+    #endif
   }
 #endif
 
@@ -186,14 +196,24 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
 
   template <class F, int N, bool simple>
   YAKL_INLINE void parallel_inner_hip( Bounds<N,simple> bounds , F const &f ) {
-    YAKL_EXECUTE_ON_DEVICE_ONLY( if (threadIdx.x < bounds.nIter) callFunctor( f , bounds , threadIdx.x ); )
+    #if YAKL_CURRENTLY_ON_DEVICE()
+      if (threadIdx.x < bounds.nIter) callFunctor( f , bounds , threadIdx.x );
+    #else
+      // Avoid not used warning
+      (void) f;
+    #endif
   }
 
 
 
   template <class F>
   YAKL_INLINE void single_inner_hip( F const &f ) {
-    YAKL_EXECUTE_ON_DEVICE_ONLY( if (threadIdx.x == 0) f(); )
+    #if YAKL_CURRENTLY_ON_DEVICE()
+      if (threadIdx.x == 0) f();
+    #else
+      // Avoid not used warning
+      (void) f;
+    #endif
   }
 #endif
 
@@ -202,6 +222,8 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
 #ifdef YAKL_ARCH_SYCL
   // Kernels are launched with the SYCL parallel_for routine. 
   // Currently, SYCL must copy this to the device manually and then run from the device
+  // Also, there is a violation of dependence wherein the stream must synchronized with a wait()
+  // call after launch
   template<class F, int N, bool simple, int VecLen, bool B4B>
   void parallel_for_sycl( Bounds<N,simple> const &bounds , F const &f , LaunchConfig<VecLen,B4B> config ) {
     #ifdef SYCL_DEVICE_COPYABLE
@@ -221,6 +243,7 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
           }
         });
         free_device( fp , "functor_buffer" );
+        copyEvent.wait();
       }
     #else
       F *fp = (F *) alloc_device(sizeof(F),"functor_buffer");
@@ -231,6 +254,7 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
         }
       });
       free_device( fp , "functor_buffer" );
+      copyEvent.wait();
     #endif
 
     check_last_error();
@@ -255,6 +279,7 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
           callFunctorOuter( *fp , bounds , item.get_group(0) , InnerHandler(item) );
         });
         free_device( fp , "functor_buffer" );
+        copyEvent.wait();
       }
     #else
       F *fp = (F *) alloc_device(sizeof(F),"functor_buffer");
@@ -264,6 +289,7 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
         callFunctorOuter( *fp , bounds , item.get_group(0) , InnerHandler(item) );
       });
       free_device( fp , "functor_buffer" );
+      copyEvent.wait();
     #endif
 
     check_last_error();
@@ -273,14 +299,18 @@ YAKL_DEVICE_INLINE void callFunctorOuter(F const &f , Bounds<N,simple> const &bn
 
   template<class F, int N, bool simple>
   void parallel_inner_sycl( Bounds<N,simple> const &bounds , F const &f , InnerHandler handler ) {
-    YAKL_EXECUTE_ON_DEVICE_ONLY( if (handler.get_item().get_local_id(0) < bounds.nIter) callFunctor( f , bounds , handler.get_item().get_local_id(0) ); )
+    #if YAKL_CURRENTLY_ON_DEVICE()
+      if (handler.get_item().get_local_id(0) < bounds.nIter) callFunctor( f , bounds , handler.get_item().get_local_id(0) );
+    #endif
   }
 
 
 
   template<class F>
   void single_inner_sycl( F const &f , InnerHandler handler ) {
-    YAKL_EXECUTE_ON_DEVICE_ONLY( if (handler.get_item().get_local_id(0) == 0) f(); )
+    #if YAKL_CURRENTLY_ON_DEVICE()
+      if (handler.get_item().get_local_id(0) == 0) f();
+    #endif
   }
 #endif
 
@@ -642,13 +672,18 @@ inline void parallel_outer( char const * str , LBnd bnd , F const &f ,
 ////////////////////////////////////////////////////////////////////////////////////
 template <class F, int N, bool simple>
 YAKL_INLINE void parallel_inner( Bounds<N,simple> const &bounds , F const &f , InnerHandler handler ) {
-  YAKL_EXECUTE_ON_HOST_ONLY( parallel_inner_cpu_serial( bounds , f ); )
-  #ifdef YAKL_ARCH_CUDA
-    YAKL_EXECUTE_ON_DEVICE_ONLY( parallel_inner_cuda( bounds , f ); )
-  #elif defined(YAKL_ARCH_HIP)
-    YAKL_EXECUTE_ON_DEVICE_ONLY( parallel_inner_hip ( bounds , f ); )
-  #elif defined(YAKL_ARCH_SYCL)
-    YAKL_EXECUTE_ON_DEVICE_ONLY( parallel_inner_sycl( bounds , f , handler ); )
+  #if YAKL_CURRENTLY_ON_HOST()
+    parallel_inner_cpu_serial( bounds , f );
+  #else
+    #ifdef YAKL_ARCH_CUDA
+      parallel_inner_cuda( bounds , f );
+    #elif defined(YAKL_ARCH_HIP)
+      parallel_inner_hip ( bounds , f );
+    #elif defined(YAKL_ARCH_SYCL)
+      parallel_inner_sycl( bounds , f , handler );
+    #else
+      parallel_inner_cpu_serial( bounds , f );
+    #endif
   #endif
   #ifdef YAKL_AUTO_FENCE
     fence_inner(handler);
@@ -667,13 +702,18 @@ YAKL_INLINE void parallel_inner( LBnd bnd , F const &f , InnerHandler handler ) 
 
 template <class F>
 YAKL_INLINE void single_inner( F const &f , InnerHandler handler ) {
-  YAKL_EXECUTE_ON_HOST_ONLY( f(); )
-  #ifdef YAKL_ARCH_CUDA
-    YAKL_EXECUTE_ON_DEVICE_ONLY( single_inner_cuda( f ); )
-  #elif defined(YAKL_ARCH_HIP)
-    YAKL_EXECUTE_ON_DEVICE_ONLY( single_inner_hip ( f ); )
-  #elif defined(YAKL_ARCH_SYCL)
-    YAKL_EXECUTE_ON_DEVICE_ONLY( single_inner_sycl( f , handler ); )
+  #if YAKL_CURRENTLY_ON_HOST()
+    f();
+  #else
+    #ifdef YAKL_ARCH_CUDA
+      single_inner_cuda( f );
+    #elif defined(YAKL_ARCH_HIP)
+      single_inner_hip ( f );
+    #elif defined(YAKL_ARCH_SYCL)
+      single_inner_sycl( f , handler );
+    #else
+      f();
+    #endif
   #endif
   #ifdef YAKL_AUTO_FENCE
     fence_inner(handler);
